@@ -1,0 +1,128 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("volunteer")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  interactions  Interaction[]
+  allocations   Allocation[]
+}
+
+model Artist {
+  id           String        @id @default(cuid())
+  name         String
+  handle       String?       @unique
+  bio          String?
+  contactPref  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  artworks     Artwork[]
+  interactions Interaction[]
+  assessments  Assessment[]
+  allocations  Allocation[]
+  siteExports  SiteExport[]
+}
+
+model Artwork {
+  id          String   @id @default(cuid())
+  artist      Artist   @relation(fields: [artistId], references: [id])
+  artistId    String
+  title       String
+  description String?
+  price       Int?
+  imagePath   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Interaction {
+  id          String   @id @default(cuid())
+  artist      Artist   @relation(fields: [artistId], references: [id])
+  artistId    String
+  volunteer   User     @relation(fields: [volunteerId], references: [id])
+  volunteerId String
+  type        String
+  quantity    Int?
+  money       Int?
+  notes       String?
+  timestamp   DateTime @default(now())
+  location    String?
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  artist    Artist   @relation(fields: [artistId], references: [id])
+  artistId  String
+  type      String // "PHQ-9" or "GAD-7"
+  answers   Json
+  score     Int
+  createdAt DateTime @default(now())
+}
+
+model Allocation {
+  id          String   @id @default(cuid())
+  volunteer   User     @relation(fields: [volunteerId], references: [id])
+  volunteerId String
+  artist      Artist   @relation(fields: [artistId], references: [id])
+  artistId    String
+  timeMinutes Int?
+  moneyCents  Int?
+  purpose     String?
+  createdAt   DateTime @default(now())
+}
+
+model SiteExport {
+  id          String   @id @default(cuid())
+  artist      Artist   @relation(fields: [artistId], references: [id])
+  artistId    String
+  generatedAt DateTime @default(now())
+  zipPath     String
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
